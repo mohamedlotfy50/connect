@@ -1,0 +1,1 @@
+enum AuthenticationError { invalid }
