@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:math' as m;
 import 'package:connect/domain/animation/kinematics.dart';
 import 'package:connect/domain/animation/segment.dart';
+import 'package:connect/presentation/avatar/fabrik.dart';
 import 'package:flutter/material.dart';
 
 class AvatarScreen extends StatefulWidget {
-  final Kinematics k = Kinematics();
+  final FABRIK fabrik = FABRIK();
 
   AvatarScreen({Key? key}) : super(key: key);
 
@@ -14,35 +15,44 @@ class AvatarScreen extends StatefulWidget {
 }
 
 class _AvatarScreenState extends State<AvatarScreen> {
-  testCreation() {
-    for (int i = 0; i < 5; i++) {
-      widget.k.addRootSegment('$i', x: 400, y: 400, length: 100, angle: i * 10);
-    }
-    for (int i = 0; i < 5; i++) {
-      widget.k.addtoSegment('$i$i', '$i', length: 100, angle: i * 10);
-    }
-    for (int i = 0; i < 5; i++) {
-      widget.k.addtoSegment('$i$i$i', '$i$i', length: 100, angle: 0);
-    }
-  }
-
+  Offset? offset;
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    testCreation();
     return Scaffold(
-      body: CustomPaint(
-        size: size,
-        painter: Shape(widget.k),
+      body: GestureDetector(
+        onPanDown: ((details) {
+          setState(() {
+            offset = details.localPosition;
+            widget.fabrik.animateJointS([
+              Joint(1,
+                  dx: details.localPosition.dx, dy: details.localPosition.dy)
+            ]);
+          });
+        }),
+        child: CustomPaint(
+          size: size,
+          painter: Shape(widget.fabrik.links, offset),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            widget.fabrik.append(1, 0,
+                x1: 0, y1: size.height / 2, angle: 0, length: 100);
+          });
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
 }
 
 class Shape extends CustomPainter {
-  final Kinematics kinematics;
+  final Offset? offset;
+  final List<Link> links;
 
-  Shape(this.kinematics);
+  Shape(this.links, this.offset);
   @override
   void paint(Canvas canvas, Size size) {
     var root = Paint()
@@ -55,12 +65,12 @@ class Shape extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 5
       ..style = PaintingStyle.stroke;
-
-    for (var s in kinematics.getRootSegments) {
-      var path = Path();
-      path.moveTo(s.start.x, s.start.y);
-      path.lineTo(s.end.x, s.end.y);
-      canvas.drawPath(path, s.id.length == 1 ? root : child);
+    if (offset != null) {
+      canvas.drawCircle(offset!, 2, child);
+    }
+    for (var l in links) {
+      canvas.drawLine(
+          Offset(l.start.x, l.start.y), Offset(l.end.x, l.end.y), root);
     }
   }
 
