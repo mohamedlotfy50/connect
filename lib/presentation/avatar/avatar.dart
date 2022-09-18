@@ -21,15 +21,26 @@ class _AvatarScreenState extends State<AvatarScreen> {
     final Size size = MediaQuery.of(context).size;
     return Scaffold(
       body: GestureDetector(
-        onPanDown: ((details) {
+        onPanDown: (details) {
           setState(() {
             offset = details.localPosition;
-            widget.fabrik.animateJointS([
+            widget.fabrik.animateJoint([
               Joint(1,
-                  dx: details.localPosition.dx, dy: details.localPosition.dy)
+                  dx: details.localPosition.dx, dy: details.localPosition.dy),
+              Joint(2,
+                  dx: details.localPosition.dx, dy: details.localPosition.dy),
             ]);
           });
-        }),
+        },
+        // onPanUpdate: (details) {
+        //   setState(() {
+        //     offset = details.localPosition;
+        //     widget.fabrik.animateJoint([
+        //       Joint(1,
+        //           dx: details.localPosition.dx, dy: details.localPosition.dy)
+        //     ]);
+        //   });
+        // },
         child: CustomPaint(
           size: size,
           painter: Shape(widget.fabrik.links, offset),
@@ -38,8 +49,14 @@ class _AvatarScreenState extends State<AvatarScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            widget.fabrik.append(1, 0,
+            widget.fabrik.addEndEffector(1, 0,
                 x1: 0, y1: size.height / 2, angle: 0, length: 100);
+
+            widget.fabrik.addEndEffector(2, 3,
+                x1: 0,
+                y1: size.height / 2 + 100,
+                x2: 100,
+                y2: size.height / 2 + 100);
           });
         },
         child: const Icon(Icons.add),
@@ -56,6 +73,16 @@ class Shape extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     var root = Paint()
+      ..color = Colors.yellow
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 5
+      ..style = PaintingStyle.stroke;
+    var head = Paint()
+      ..color = Colors.blue
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 5
+      ..style = PaintingStyle.stroke;
+    var tail = Paint()
       ..color = Colors.red
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 5
@@ -70,7 +97,9 @@ class Shape extends CustomPainter {
     }
     for (var l in links) {
       canvas.drawLine(
-          Offset(l.start.x, l.start.y), Offset(l.end.x, l.end.y), root);
+          Offset(l.head.x, l.head.y), Offset(l.tail.x, l.tail.y), root);
+      canvas.drawCircle(Offset(l.tail.x, l.tail.y), 1, tail);
+      canvas.drawCircle(Offset(l.head.x, l.head.y), 1, head);
     }
   }
 

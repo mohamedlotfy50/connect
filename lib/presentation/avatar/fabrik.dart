@@ -8,25 +8,54 @@ class FABRIK {
 
   List<Link> get links => _links;
 
-  void append(
-    int id,
-    int parentID, {
+  void appendTo(
+    int headID,
+    int tailID, {
     required double x1,
     required double y1,
-    required double angle,
-    required double length,
+    required double? x2,
+    required double? y2,
+    required double? angle,
+    required double? length,
   }) {
-    if (parentIndex.containsKey(parentID)) {
-      _links[parentIndex[parentID]!].append();
-    } else {
-      parentIndex[id] = _links.length;
-      links.add(
-          Link(parentID, id, x1: x1, y1: y1, angle: angle, length: length));
+    if (parentIndex.containsKey(tailID)) {
+      Link l;
+      if (length != null && angle != null) {
+        l = Link.fromLength(tailID, headID,
+            x1: x1, y1: y1, angle: angle, length: length);
+      } else if (x2 != null && y2 != null) {
+        l = Link.fromPoints(tailID, headID, x1: x1, y1: y1, x2: x2, y2: y2);
+      } else {
+        throw Exception('inavlid');
+      }
+      _links[parentIndex[tailID]!].append(l);
     }
   }
 
-  void animateJointS(List<Joint> joints) {
-    print(parentIndex);
+  void addEndEffector(
+    int headID,
+    int tailID, {
+    required double x1,
+    required double y1,
+    double? x2,
+    double? y2,
+    double? angle,
+    double? length,
+  }) {
+    parentIndex[headID] = _links.length;
+    Link l;
+    if (length != null && angle != null) {
+      l = Link.fromLength(tailID, headID,
+          x1: x1, y1: y1, angle: angle, length: length);
+    } else if (x2 != null && y2 != null) {
+      l = Link.fromPoints(tailID, headID, x1: x1, y1: y1, x2: x2, y2: y2);
+    } else {
+      throw Exception('inavlid');
+    }
+    _links.add(l);
+  }
+
+  void animateJoint(List<Joint> joints) {
     for (var j in joints) {
       if (parentIndex.containsKey(j.id)) {
         _links[parentIndex[j.id]!].animate(j);
@@ -35,54 +64,72 @@ class FABRIK {
   }
 }
 
+//*Links
 class Link {
-  late final Joint start, end;
-  final double angle, length;
+  final Joint head, tail;
+  final double length;
+  double angle;
   final List<Link> previous = [];
   final List<Link> next = [];
 
-  Link(
-    int id1,
-    int id2, {
+  Link._(this.head, this.tail, this.length, this.angle);
+
+  factory Link.fromLength(
+    int tailID,
+    int headID, {
     required double x1,
     required double y1,
-    required this.angle,
-    required this.length,
+    required double angle,
+    required double length,
   }) {
-    start = Joint(id1, dx: x1, dy: y1);
-    end = _calculateEnd(id2);
+    var t = Joint(tailID, dx: x1, dy: y1);
+    double x2 = t.x + length * cos(angle);
+    double y2 = t.y + length * sin(angle);
+    var h = Joint(headID, dx: x2, dy: y2);
+
+    return Link._(h, t, length, angle);
   }
 
-  Joint _calculateEnd(int id2) {
-    double x2 = start.x + length * cos(angle);
-    double y2 = start.x + length * sin(angle);
-    return Joint(id2, dx: x2, dy: y2);
+  factory Link.fromPoints(
+    int tailID,
+    int headID, {
+    required double x1,
+    required double y1,
+    required double x2,
+    required double y2,
+  }) {
+    var t = Joint(tailID, dx: x2, dy: y2);
+    var h = Joint(headID, dx: x1, dy: y1);
+    var d = Joint.distance(t, h);
+    var a = asin(((h._y - t.y) / d));
+    print(a);
+
+    return Link._(t, h, d, a);
   }
 
-  void animate(Joint j) {
-    if (start.id == j.id) {
-      print('animate start');
-      start.copyWith(dx: j.x, dy: j.y);
-      //TODO:add calculations
-      end.copyWith();
-      start.printpoint();
-    } else if (end.id == j.id) {
-      print('animate end');
+  void _calculateTail() {
+    var direction = Joint.sub(tail, head);
+    var normal = direction / Joint.distance(head, tail);
+    var sum = normal * length;
+    var newPoint = Joint.add(head, sum);
+    tail.copyWith(dx: newPoint.x, dy: newPoint.y);
+  }
 
-      end.copyWith(dx: j.x, dy: j.y);
-      //TODO:add calculations
-      start.copyWith();
-      end.printpoint();
-    }
+  void animate(Joint target) {
+    if (head.id == target.id) {
+      head.copyWith(dx: target._x, dy: target._y);
+      _calculateTail();
+    } else if (tail.id == target.id) {}
   }
 
   bool containts(int id) {
-    return start.id == id || end.id == id;
+    return head.id == id || tail.id == id;
   }
 
-  void append() {}
+  void append(Link child) {}
 }
 
+//* joint
 class Joint {
   final int id;
   late double _x, _y;
@@ -109,5 +156,29 @@ class Joint {
 
   void printpoint() {
     print('x = $_x, y = $_y');
+  }
+
+  double heading() {
+    return atan2(_y, x);
+  }
+
+  static Joint sub(Joint j1, Joint j2, {int? id}) {
+    return Joint(id ?? j1.id, dx: j1._x - j2._x, dy: j1._y - j2._y);
+  }
+
+  static Joint add(Joint j1, Joint j2, {int? id}) {
+    return Joint(id ?? j1.id, dx: j1._x + j2._x, dy: j1._y + j2._y);
+  }
+
+  static double distance(Joint j1, Joint j2) {
+    return sqrt((pow(j1._x - j2._x, 2) + pow(j1._y - j2._y, 2)));
+  }
+
+  Joint operator *(num n) {
+    return Joint(id, dx: _x * n, dy: _y * n);
+  }
+
+  Joint operator /(num n) {
+    return Joint(id, dx: _x / n, dy: _y / n);
   }
 }

@@ -1,28 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.connect">
-    	<application>
-		<meta-data
-			android:name="com.google.android.wearable.standalone"
-			android:value="true"
-			/>
-	</application>
 
-
-	<!-- Flags the app as a Wear app -->
-	<uses-feature android:name="android.hardware.type.watch" />
-
-	<!-- Required for ambient mode support -->
-	<uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-
-
-       <application
-               android:extractNativeLibs="true"
-
+   <application
         android:label="connect"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-    
         <activity
             android:name=".MainActivity"
             android:exported="true"

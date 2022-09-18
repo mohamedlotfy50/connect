@@ -51,6 +51,7 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
     }
 
     buildTypes {
@@ -68,8 +69,5 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-        // Wear libraries
-	implementation 'androidx.wear:wear:1.2.0'
-	implementation 'com.google.android.support:wearable:2.8.1'
-	compileOnly 'com.google.android.wearable:wearable:2.8.1'
+    
 }
