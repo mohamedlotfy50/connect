@@ -49,14 +49,12 @@ class _AvatarScreenState extends State<AvatarScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            widget.fabrik.addEndEffector(1, 0,
-                x1: 0, y1: size.height / 2, angle: 0, length: 100);
-
             widget.fabrik.addEndEffector(2, 3,
-                x1: 0,
-                y1: size.height / 2 + 100,
-                x2: 100,
-                y2: size.height / 2 + 100);
+                x1: size.width / 2,
+                y1: size.height / 2,
+                x2: size.width / 2 + 100,
+                y2: size.height / 2);
+            widget.fabrik.appendTo(3, 4, length: 100, angle: 40 * 180 / m.pi);
           });
         },
         child: const Icon(Icons.add),
@@ -98,6 +96,10 @@ class Shape extends CustomPainter {
     for (var l in links) {
       canvas.drawLine(
           Offset(l.head.x, l.head.y), Offset(l.tail.x, l.tail.y), root);
+      for (var c in l.previous) {
+        canvas.drawLine(
+            Offset(c.head.x, c.head.y), Offset(c.tail.x, c.tail.y), root);
+      }
       canvas.drawCircle(Offset(l.tail.x, l.tail.y), 1, tail);
       canvas.drawCircle(Offset(l.head.x, l.head.y), 1, head);
     }
